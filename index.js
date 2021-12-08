@@ -3,8 +3,13 @@ const mysql = require('mysql')
 const passport = require('passport')
 
 const users = require('./routes/api/users')
+const orders = require('./routes/api/orders')
 
-const db = require('./models/connection')
+const sequelize = require('./utils/db')
+
+const User = require('./models/User')
+
+sequelize.sync()
 
 const app = express()
 
@@ -16,6 +21,7 @@ app.use(passport.initialize())
 require('./config/passport') (passport)
 
 app.use('/api/users', users)
+app.use('/api/orders', orders)
 
 const port = process.env.PORT || 8080
 app.listen( port, () => {
