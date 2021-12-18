@@ -59,29 +59,27 @@ router.post('/login', (req, res) => {
     if(!isValid) {
         res.status(400).json(errors)
     } else {
-        const email = req.body.email
         const curpass = req.body.password
-        db.query('SELECT * FROM users WHERE email = ?', email, (error, rows) => {
-            if(rows.length === 0) {
-                error = 'User not found'
+
+        User.findOne({ where: { email: req.body.email } }).then(user => {
+            if(user === null) {
+                error = "User not found"
                 res.status(400).json(error)
             } else {
-                bcrypt.compare(curpass, rows[0].password, (error, result) => {
-                    //console.log(result)
+                bcrypt.compare(curpass, user.password, (error, result) => {
                     if(result) {
                         const payload = {
-                            id: rows[0].id,
-                            name: rows[0].name,
-                            email: rows[0].email,
-                            address: rows[0].address
+                            id: user.id,
+                            name: user.name,
+                            email: user.email,
+                            address: user.address
                         }
 
                         jwt.sign(payload, keys.secretOrKey, {expiresIn: '60s'}, (error, token) => {
                             res.json({ success: true, token: 'Bearer ' + token })
                         })
-                        console.log(payload)
                     } else {
-                        error = 'Password incorrect'
+                        error = "Password incorrect"
                         res.status(400).json(error)
                     }
                 })
@@ -109,17 +107,20 @@ router.post('/edituser', passport.authenticate('jwt', { session: false }), (req,
     }
     
     const uid = req.user.id
-    db.query('UPDATE users SET name=?, address=? WHERE id = ?', [ req.body.name, req.body.address, uid], (error, rows) => {
-        if(rows.affectedRows) {
-            res.status(200).json('User Info updated')
-        } else {
-            console.log(error)
-        }
+    /*
+    User.update({ name: req.body.name, address: req.body.address },
+        { where: { id: uid }}, { multi: true },).then(user => {
+        res.status(200).json('user info updated')
+        console.log(user)
+    })*/
+    User.findByPk(uid).then(user => {
+        user.name = req.body.name
+        user.address = req.body.address
+        user.save()
+        res.status(200).json('User info updated')
+    }).catch(error => {
+        console.log(error)
     })
-    
-    console.log(req.user.id)
-    //res.status(200).json(req.user)
-    //db.query('SELECT * FROM users WHERE ')
 })
 
 
